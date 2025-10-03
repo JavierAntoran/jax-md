@@ -24,7 +24,7 @@ from jax import vmap
 from jax import random
 from jax import lax
 
-from jax.config import config as jax_config
+import jax
 import jax.numpy as np
 
 from jax_md import quantity
@@ -40,7 +40,7 @@ from jax_md.util import *
 
 from functools import partial
 
-jax_config.parse_flags_with_absl()
+jax.config.parse_flags_with_absl()
 
 
 PARTICLE_COUNT = 1000
@@ -53,11 +53,11 @@ COORDS = ['fractional', 'real']
 LANGEVIN_PARTICLE_COUNT = 8000
 LANGEVIN_DYNAMICS_STEPS = 8000
 
-BROWNIAN_PARTICLE_COUNT = 8000
+BROWNIAN_PARTICLE_COUNT = 24000
 BROWNIAN_DYNAMICS_STEPS = 8000
 
 DTYPE = [f32]
-if jax_config.jax_enable_x64:
+if jax.config.jax_enable_x64:
   DTYPE += [f64]
 
 
@@ -522,7 +522,7 @@ class SimulateTest(test_util.JAXMDTestCase):
     E = lambda x: jnp.sum(0.5 * alpha * x ** 2)
     displacement, shift = space.free()
 
-    N = 100_000
+    N = 200000
     steps = 1000
     kT = 0.25
     dt = 1e-4
@@ -581,7 +581,7 @@ class SimulateTest(test_util.JAXMDTestCase):
     _, shift = space.free()
     energy_fn = lambda R, **kwargs: f32(0)
 
-    R = np.zeros((BROWNIAN_PARTICLE_COUNT, 2), dtype=dtype)
+    R = np.zeros((BROWNIAN_PARTICLE_COUNT, spatial_dimension), dtype=dtype)
     mass = random.uniform(
       mass_split, (), minval=0.1, maxval=10.0, dtype=dtype)
     T = random.uniform(T_split, (), minval=0.3, maxval=1.4, dtype=dtype)
@@ -699,7 +699,7 @@ class SimulateTest(test_util.JAXMDTestCase):
       tol = 5e-4 if dtype is f32 else 1e-6
       self.assertAllClose(invariant(state.momentum, state.mass), initial, rtol=tol)
       self.assertEqual(state.position.dtype, dtype)
-  
+
   @parameterized.named_parameters(test_util.cases_from_list(
       {
           'testcase_name': '_dim={}_dtype={}'.format(dim, dtype.__name__),
